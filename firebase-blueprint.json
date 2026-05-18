@@ -1,0 +1,110 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Telegram user registered with the bot",
+      "type": "object",
+      "properties": {
+        "telegramId": { "type": "string", "description": "Unique Telegram ID" },
+        "username": { "type": "string" },
+        "role": { "type": "string", "enum": ["owner", "admin", "seller", "guard", "vip", "member"] },
+        "balance": { "type": "number", "description": "User's internal balance" },
+        "expiryDate": { "type": "string", "format": "date-time", "description": "When membership expires" },
+        "isBanned": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["telegramId", "role"]
+    },
+    "Group": {
+      "title": "Group",
+      "description": "Telegram group managed by the bot",
+      "type": "object",
+      "properties": {
+        "groupId": { "type": "string" },
+        "title": { "type": "string" },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "protectLinks": { "type": "boolean" },
+            "protectToxic": { "type": "boolean" },
+            "protectSpam": { "type": "boolean" },
+            "forbiddenKeywords": { "type": "array", "items": { "type": "string" } },
+            "welcomeMessage": { "type": "string" },
+            "autoReplies": { 
+              "type": "array", 
+              "items": { 
+                "type": "object",
+                "properties": {
+                  "trigger": { "type": "string" },
+                  "reply": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "Blacklist": {
+        "title": "Blacklist",
+        "type": "object",
+        "properties": {
+          "telegramId": { "type": "string" },
+          "reason": { "type": "string" },
+          "bannedBy": { "type": "string" },
+          "createdAt": { "type": "string" }
+        }
+      },
+      "required": ["groupId"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Sale of access/roles",
+      "type": "object",
+      "properties": {
+        "sellerId": { "type": "string" },
+        "buyerId": { "type": "string" },
+        "rolePurchased": { "type": "string" },
+        "amount": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sellerId", "buyerId", "rolePurchased", "amount"]
+    },
+    "Poll": {
+      "title": "Poll",
+      "description": "Broadcasted telegram poll",
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "totalVotes": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["question", "options"]
+    }
+  },
+  "firestore": {
+    "users": {
+      "schema": "User",
+      "description": "Collection of bot users"
+    },
+    "groups": {
+      "schema": "Group",
+      "description": "Collection of managed groups"
+    },
+    "transactions": {
+      "schema": "Transaction",
+      "description": "Log of access sales"
+    },
+    "logs": {
+      "schema": "Log",
+      "description": "System activity logs"
+    },
+    "blacklist": {
+      "schema": "Blacklist",
+      "description": "Global banned users"
+    },
+    "polls": {
+      "schema": "Poll",
+      "description": "Collection of sent polls"
+    }
+  }
+}

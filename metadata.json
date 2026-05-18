@@ -1,0 +1,6 @@
+{
+  "name": "GuardBot Telegram Manager",
+  "description": "Powerful Telegram group management bot with tiered roles, access selling capabilities, and VIP management system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
