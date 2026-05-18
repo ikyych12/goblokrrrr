@@ -91,16 +91,23 @@ async function startServer() {
         const doc = await userRef.get();
         
         if (!doc.exists) {
+          const defaultRole = userId === "8696784568" ? "owner" : "member";
           await userRef.set({
             telegramId: userId,
             username: ctx.from.username || ctx.from.first_name || "Unknown",
-            role: "member",
+            role: defaultRole,
             balance: 0,
             createdAt: new Date().toISOString(),
           });
-          ctx.state.user = { role: "member", balance: 0 };
+          ctx.state.user = { role: defaultRole, balance: 0 };
         } else {
-          ctx.state.user = doc.data();
+          // Force owner role for the specific ID even if DB says otherwise
+          const userData = doc.data();
+          if (userId === "8696784568" && userData?.role !== "owner") {
+            userData!.role = "owner";
+            await userRef.update({ role: "owner" });
+          }
+          ctx.state.user = userData;
         }
       } catch (err) {
         console.error("DB Error in middleware", err);
