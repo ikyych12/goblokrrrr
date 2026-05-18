@@ -59,6 +59,24 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // --- Logs Collection ---
+    match /logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+    }
+
+    // --- Polls Collection ---
+    match /polls/{pollId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin();
+    }
+
+    // --- Blacklist Collection ---
+    match /blacklist/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
     // --- Transactions Collection ---
     match /transactions/{txId} {
       allow read: if isSignedIn() && (resource.data.sellerId == request.auth.uid || resource.data.buyerId == request.auth.uid || isAdmin());

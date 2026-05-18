@@ -2,19 +2,55 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { Telegraf, Context } from "telegraf";
-import * as admin from "firebase-admin";
+import admin from "firebase-admin";
 import dotenv from "dotenv";
+import fs from "fs";
 
 dotenv.config();
 
-// Initialize Firebase Admin
-if (!admin.apps || admin.apps.length === 0) {
-  admin.initializeApp({
-    credential: admin.credential.applicationDefault(),
-  });
+let firebaseConfig = { firestoreDatabaseId: process.env.FIREBASE_DATABASE_ID, projectId: process.env.FIREBASE_PROJECT_ID };
+try {
+  const configPath = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(configPath)) {
+    const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
+    firebaseConfig.firestoreDatabaseId = firebaseConfig.firestoreDatabaseId || config.firestoreDatabaseId;
+    firebaseConfig.projectId = firebaseConfig.projectId || config.projectId;
+  }
+} catch (err) {
+  console.error("Error reading firebase-applet-config.json", err);
 }
 
+// Initialize Firebase Admin
+if (!admin.apps || admin.apps.length === 0) {
+  const serviceAccountPath = path.join(process.cwd(), "service-account.json");
+  if (fs.existsSync(serviceAccountPath)) {
+    admin.initializeApp({
+      credential: admin.credential.cert(serviceAccountPath),
+      projectId: firebaseConfig.projectId,
+    });
+  } else if (firebaseConfig.projectId) {
+    admin.initializeApp({
+      projectId: firebaseConfig.projectId,
+    });
+  } else {
+    // If no project ID, try default (local may require GOOGLE_APPLICATION_CREDENTIALS)
+    admin.initializeApp();
+  }
+}
+
+// admin.firestore() takes an App as argument, not a database ID string.
+// For named databases, we use the default app or specify it in initialization if using SDK v11+
 const db = admin.firestore();
+if (firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== "(default)") {
+  (db as any).databaseId = firebaseConfig.firestoreDatabaseId;
+}
+
+// Verify Firestore connection
+db.listCollections().then(() => {
+  console.log("✅ Successfully connected to Firestore database:", firebaseConfig.firestoreDatabaseId || "(default)");
+}).catch(err => {
+  console.error("❌ Firestore connection failed:", err.message);
+});
 
 async function startServer() {
   const app = express();
@@ -305,7 +341,7 @@ async function startServer() {
 
     // Buy/Rent Command
     bot.command("rent", async (ctx) => {
-      ctx.reply(`💎 *MENU SEWA GRUP* 💎\n\nPilih paket untuk akses grup:\n\n1. 7 Hari - Rp 25.000\n2. 30 Hari - Rp 80.000\n3. Permanen - Menghubungi Admin\n\n_Ketik /pay [no_paket] untuk membeli._`, { parse_mode: "Markdown" });
+      ctx.reply(`💎 *MENU SEWA GRUP* 💎\n\nPilih paket untuk akses grup:\n\n1. 7 Hari - Rp 25.000\n2. 30 Hari - Rp 80.000\n3. Permanen - Menghubungi Admin\n\n_Ketik /pay (nomor paket) untuk membeli._`, { parse_mode: "Markdown" });
     });
 
     bot.command("pay", async (ctx) => {
@@ -368,7 +404,7 @@ async function startServer() {
       
       const args = text.split(" ");
       if (args.length < 3) {
-        return ctx.reply("⚠️ *FORMAT SALAH*\n\nGunakan: `/promote [user_id] [role]`\nContoh: `/promote 12345 vip`", { parse_mode: "Markdown" });
+        return ctx.reply("⚠️ *FORMAT SALAH*\n\nGunakan: `/promote (user_id) (role)`\nContoh: `/promote 12345 vip`", { parse_mode: "Markdown" });
       }
 
       const targetId = args[1];
